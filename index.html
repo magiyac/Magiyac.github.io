@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magiya's Portfolio</title>
     <style>
-        /* 这里就是刚才丢失的 body 部分，背景色就在这里设置 */
         body {
-            background-color: #000000; /* 纯黑背景 */
-            color: #ffffff;            /* 白色文字 */
+            background-color: #000000;
+            color: #ffffff;
             margin: 0;
             padding: 0;
             font-family: 'Arial', sans-serif;
@@ -26,13 +25,18 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            text-align: center;
         }
 
-        p { color: #888; margin-bottom: 40px; }
+        p.subtitle { 
+            color: #888; 
+            margin-bottom: 50px; 
+            font-size: 1rem;
+        }
         
         .gallery {
             display: flex;
-            gap: 20px;
+            gap: 30px; /* 卡片之间的间距 */
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -41,41 +45,66 @@
             background: #111;
             border: 1px solid #333;
             border-radius: 15px;
-            padding: 20px;
-            width: 250px;
-            text-align: center;
-            transition: transform 0.3s, border-color 0.3s;
+            padding: 30px 20px; /* 增加内部填充 */
+            width: 260px;       /* 稍微加宽一点 */
+            height: 180px;      /* 固定高度，保证整齐 */
+            
+            /* 关键：让卡片里的内容垂直居中 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            
+            transition: all 0.3s ease;
             cursor: pointer;
             text-decoration: none;
             color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         .card:hover {
             transform: translateY(-10px);
             border-color: #22d3ee;
             background: #1a1a1a;
+            box-shadow: 0 10px 20px rgba(34, 211, 238, 0.1);
         }
 
-        .card h3 { margin: 10px 0; }
-        .card span { font-size: 50px; display: block; margin-bottom: 10px; }
+        .card .icon { 
+            font-size: 40px; 
+            margin-bottom: 15px; 
+            line-height: 1;
+        }
+        
+        .card h3 { 
+            margin: 0 0 10px 0; 
+            font-size: 1.2rem;
+            color: #fff;
+        }
+        
+        .card p { 
+            font-size: 12px; 
+            margin: 0; 
+            color: #666; 
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
 
     <h1>Welcome to My World</h1>
-    <p>这里展示我的前端开发作品</p>
+    <p class="subtitle">这里展示我的前端开发作品</p>
 
     <div class="gallery">
-        <a href="https://magiyac.github.io/galaxy-particles/" class="card" target="_blank"></a>
-            <span>🌌</span>
+        <a href="https://magiyac.github.io/galaxy-particles/" class="card" target="_blank">
+            <div class="icon">🌌</div>
             <h3>星空粒子交互</h3>
-            <p style="font-size: 12px; margin:0;">React + Three.js + MediaPipe<br>手势控制与语音变色</p>
+            <p>React + Three.js + MediaPipe<br>手势控制与语音变色</p>
         </a>
 
-        <div class="card" style="opacity: 0.5; cursor: default;">
-            <span>🚧</span>
+        <div class="card" style="opacity: 0.5; cursor: default; border-style: dashed;">
+            <div class="icon">🚧</div>
             <h3>更多作品</h3>
-            <p style="font-size: 12px; margin:0;">开发中...</p>
+            <p>开发中...</p>
         </div>
     </div>
 
