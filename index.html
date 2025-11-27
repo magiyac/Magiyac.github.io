@@ -1,0 +1,59 @@
+<style>
+        body {
+            /* 1. 核心：纯黑背景 */
+            background-color: #000000;
+            
+            /* 2. 核心：白色文字 */
+            color: #ffffff;
+
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            /* 标题渐变色 */
+            background: linear-gradient(to right, #22d3ee, #a855f7);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        p { color: #888; margin-bottom: 40px; }
+        
+        .gallery {
+            display: flex;
+            gap: 20px;
+        }
+
+        .card {
+            /* 卡片用深灰色，突出层次感 */
+            background: #111; 
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            width: 250px;
+            text-align: center;
+            transition: transform 0.3s, border-color 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: #22d3ee;
+            background: #1a1a1a;
+        }
+
+        .card h3 { margin: 10px 0; }
+        .card span { font-size: 50px; display: block; margin-bottom: 10px; }
+    </style>
+    
+    
