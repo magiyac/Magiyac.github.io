@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -144,24 +144,39 @@
                     <span class="en">Launch Demo</span>
                 </a>
             </div>
-
-<div class="card">
-    <h3>
-        <span class="zh">Galaxy 星系粒子项目</span>
-        <span class="fr">Projet Particules Galaxie</span>
-        <span class="en">Galaxy Particle Project</span>
-    </h3>
-    <p class="zh">使用 React、Vite 和 Three.js 构建的交互式星系粒子效果。这是一个使用现代前端框架的复杂 WebGL 演示。</p>
-    <p class="fr">Effet de particules galactiques interactif construit avec React, Vite et Three.js. Une démonstration WebGL complexe utilisant un framework moderne.</p>
-    <p class="en">Interactive galaxy particle effect built with React, Vite, and Three.js. A complex WebGL demonstration using modern front-end frameworks.</p>
-    
-    <a href="projects/galaxy-demo/index.html" class="card-btn">
-        <span class="zh">查看演示</span>
-        <span class="fr">Voir la démo</span>
-        <span class="en">View Demo</span>
-    </a>
-</div>
             
+            <div class="card">
+                <h3>
+                    <span class="zh">Galaxy 星系粒子项目</span>
+                    <span class="fr">Projet Particules Galaxie</span>
+                    <span class="en">Galaxy Particle Project</span>
+                </h3>
+                <p class="zh">使用 React、Vite 和 Three.js 构建的交互式星系粒子效果。这是一个使用现代前端框架的复杂 WebGL 演示。</p>
+                <p class="fr">Un projet d'interaction par particules construit avec React, Vite et Three.js. Une démonstration WebGL complexe utilisant un framework moderne.</p>
+                <p class="en">Interactive galaxy particle effect built with React, Vite, and Three.js. A complex WebGL demonstration using modern front-end frameworks.</p>
+                <a href="projects/galaxy-demo/index.html" class="card-btn">
+                    <span class="zh">立即体验</span>
+                    <span class="fr">Lancer la Démo</span>
+                    <span class="en">Launch Demo</span>
+                </a>
+            </div>
+
+            <div class="card">
+                <h3>
+                    <span class="zh">粒子爆炸项目</span>
+                    <span class="fr">Projet Explosion de particules</span>
+                    <span class="en">Particle Explosion Project</span>
+                </h3>
+                <p class="zh">一个使用 Three.js 或 Canvas 实现的高性能粒子系统项目。展示了复杂的物理模拟、实时渲染和高性能的 WebGL/Canvas 编程能力。</p>
+                <p class="fr">Il présente des simulations physiques sophistiquées, un rendu en temps réel et des capacités de programmation WebGL/Canvas haute performance.</p>
+                <p class="en">Demonstrates sophisticated physics simulations, real-time rendering, and high-performance WebGL/Canvas programming capabilities.</p>
+                <a href="projects/particle_system/particle_system.html" class="card-btn">
+                    <span class="zh">立即体验</span>
+                    <span class="fr">Lancer la Démo</span>
+                    <span class="en">Launch Demo</span>
+                </a>
+            </div>
+
             <div class="card">
                 <h3>GitHub</h3>
                 <p class="zh">点击这里可以直接跳转到我的 GitHub 主页，查看我所有的开源代码和提交记录。</p>
@@ -171,22 +186,6 @@
                     <span class="zh">访问主页</span>
                     <span class="fr">Visiter</span>
                     <span class="en">Visit Homepage</span>
-                </a>
-            </div>
-
-            <div class="card">
-                <h3>
-                    <span class="zh">CSS 动画演示</span>
-                    <span class="fr">Démo d'Animation CSS</span>
-                    <span class="en">CSS Animation Demo</span>
-                </h3>
-                <p class="zh">展示使用 CSS 关键帧（Keyframes）和过渡（Transitions）实现的复杂动画效果。这是对前端动效能力的体现。</p>
-                <p class="fr">Vitrine d'animations complexes réalisées avec des Keyframes et des Transitions CSS. Une démonstration de capacités front-end.</p>
-                <p class="en">Showcase of complex animations implemented using CSS Keyframes and Transitions. A demonstration of front-end dynamics.</p>
-                <a href="projects/project2.html" class="card-btn">
-                    <span class="zh">查看演示</span>
-                    <span class="fr">Voir la démo</span>
-                    <span class="en">View Demo</span>
                 </a>
             </div>
 
@@ -217,11 +216,11 @@
             setLanguage(nextLang);
         }
 
-        // 页面加载时，读取用户之前的选择
+        // 页面加载时，读取用户之前的选择并启动粒子动画
         window.onload = function() {
             const savedLang = localStorage.getItem('language') || 'zh';
             setLanguage(savedLang);
-            init(); // 确保粒子动画在页面加载时启动
+            init(); 
         }
 
 
@@ -289,4 +288,3 @@
     </script>
 </body>
 </html>
-
