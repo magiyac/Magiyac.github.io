@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>液态玻璃交互模拟器 - Magma Fluid</title>
+    <style>
+/* fluid.html 的 <style> 标签内 */
+/* ... 省略部分代码 ... */
+
+body { 
+    margin: 0 !important; 
+    overflow: hidden !important; 
+    background: #000 !important; /* 确保这里是 #000 并且没有额外的字符 */
+    font-family: 'Helvetica Neue', Arial, sans-serif; 
+}
+canvas { display: block; }
+#loading {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: white; /* 确保这里是纯文本 white */
+    font-size: 24px; pointer-events: none; z-index: 10;
+}
+
+/* ... 其他样式 ... */
+        #start-btn {
+            position: absolute; bottom: 10%; left: 50%; transform: translate(-50%, 0);
+            padding: 15px 30px; background: rgba(255, 255, 255, 0.2); border: 1px solid white;
+            color: white; cursor: pointer; border-radius: 30px; backdrop-filter: blur(10px);
+            font-size: 16px; z-index: 20; transition: 0.3s;
+        }
+        #start-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        /* 隐藏原始视频，只显示WebGL渲染结果 */
+        .input_video { display: none; }
+        .hud {
+            position: absolute; top: 20px; left: 20px; color: rgba(255,255,255,0.7);
+            font-size: 12px; pointer-events: none; z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">正在加载模型...</div>
+    <div id="hud" class="hud">等待手势...</div>
+    <button id="start-btn">点击启动体验 (开启音乐)</button>
+    <video class="input_video" playsinline></video>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+    <script>
+        // --- 全局变量与配置 ---
+        const config = {
+            reflectionIntensity: 0.5,   // 反射强度
+            refractionIndex: 0.8,       // 折射指数
+            distortionStrength: 0.3,    // 扭曲强度
+            waveHeight: 0.5,            // 波浪高度 (视觉上的bump)
+            dynamicSpeed: 0.05,         // 动态速度
+            rippleEffectStrength: 0.8,  // 涟漪强度
+            viscosity: 0.96,            // 岩浆粘度 (0-1, 越高拖尾越长)
+            pinchThreshold: 0.08        // 捏合判定距离
+        };
+
+        const state = {
+            isPinching: false,
+            handX: 0.5,
+            handY: 0.5,
+            handZ: 0, // 深度
+            volume: 0
+        };
+
+        let camera, scene, renderer;
+        let uniforms;
+        let audioCtx, oscillator, gainNode;
+        let videoElement, hands;
+        let isAudioStarted = false;
+
+        // FBO (Frame Buffer Object) 用于模拟物理流体拖尾
+        let renderTargetA, renderTargetB; 
+
+        // --- 初始化 ---
+        async function init() {
+            initThreeJS();
+            initMediaPipe();
+            initGUI();
+            
+            document.getElementById('start-btn').addEventListener('click', () => {
+                initAudio();
+                document.getElementById('start-btn').style.display = 'none';
+            });
+        }
+
+        // --- 1. Three.js 设置 (流体与Shader) ---
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // 设置双缓冲 FBO 用于模拟粘性扩散
+            const fboParams = {
+                minFilter: THREE.LinearFilter,
+                magFilter: THREE.LinearFilter,
+                format: THREE.RGBAFormat,
+                type: THREE.FloatType // 需要浮点纹理来存储精确的波纹高度
+            };
+            renderTargetA = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, fboParams);
+            renderTargetB = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, fboParams);
+
+            // 获取摄像头纹理
+            videoElement = document.querySelector('.input_video');
+            const videoTexture = new THREE.VideoTexture(videoElement);
+            videoTexture.minFilter = THREE.LinearFilter;
+
+            // --- Shader: 模拟物理波纹 (Physics Shader) ---
+            const simFragmentShader = `
+                uniform sampler2D tPrev; // 上一帧
+                uniform vec2 uMouse;
+                uniform float uIsPinching;
+                uniform float uViscosity; // 粘度/衰减
+                uniform float uSpeed;
+                uniform float uRippleStrength;
+                uniform vec2 uResolution;
+
+                varying vec2 vUv;
+
+                void main() {
+                    vec2 uv = vUv;
+                    vec2 texel = 1.0 / uResolution;
+
+                    // 读取周围像素模拟波动扩散
+                    vec4 center = texture2D(tPrev, uv);
+                    vec4 top = texture2D(tPrev, uv + vec2(0.0, texel.y));
+                    vec4 bottom = texture2D(tPrev, uv - vec2(0.0, texel.y));
+                    vec4 left = texture2D(tPrev, uv - vec2(texel.x, 0.0));
+                    vec4 right = texture2D(tPrev, uv + vec2(texel.x, 0.0));
+
+                    // 波动方程简易版
+                    float newHeight = (top.r + bottom.r + left.r + right.r) * 0.5 - center.g;
+                    
+                    // 粘度衰减 (Magma feel: 非常缓慢的衰减)
+                    newHeight *= uViscosity;
+
+                    // 鼠标/手指交互添加波纹
+                    float dist = distance(uv, uMouse);
+                    if(uIsPinching > 0.5 && dist < 0.03) {
+                        newHeight += uRippleStrength * (1.0 - dist / 0.03);
+                    }
+
+                    // 存储高度: r = 当前高度, g = 上一帧高度 (速度)
+                    gl_FragColor = vec4(newHeight, center.r, 0.0, 1.0);
+                }
+            `;
+
+            // --- Shader: 渲染显示 (Render Shader) ---
+            // 包含折射、反射和色散模拟
+            const renderFragmentShader = `
+                uniform sampler2D tDiffuse; // 摄像头原图
+                uniform sampler2D tFluid;   // 模拟出的波纹图
+                uniform float uRefraction;
+                uniform float uDistortion;
+                uniform float uReflection;
+                uniform float uWaveHeight;
+
+                varying vec2 vUv;
+
+                void main() {
+                    vec2 uv = vUv;
+                    
+                    // 读取波纹高度
+                    vec4 fluid = texture2D(tFluid, uv);
+                    float height = fluid.r * uWaveHeight;
+
+                    // 计算法线 (用于光照和扭曲)
+                    vec2 eps = vec2(0.01, 0.0);
+                    float hx = texture2D(tFluid, uv + eps.xy).r - texture2D(tFluid, uv - eps.xy).r;
+                    float hy = texture2D(tFluid, uv + eps.yx).r - texture2D(tFluid, uv - eps.yx).r;
+                    vec3 normal = normalize(vec3(hx, hy, 1.0 / uDistortion));
+
+                    // 1. 折射 (扭曲 UV) - 玻璃扭曲人物轮廓
+                    vec2 distortedUv = uv + normal.xy * uRefraction * 0.1;
+                    vec4 baseColor = texture2D(tDiffuse, distortedUv);
+
+                    // 2. 模拟色散 (Chromatic Aberration) - 边缘色彩分离
+                    float aberration = 0.01 * height;
+                    baseColor.r = texture2D(tDiffuse, distortedUv + vec2(aberration, 0.0)).r;
+                    baseColor.b = texture2D(tDiffuse, distortedUv - vec2(aberration, 0.0)).b;
+
+                    // 3. 反射/高光 (根据法线计算)
+                    float specular = pow(max(0.0, dot(normal, normalize(vec3(1.0, 1.0, 1.0)))), 20.0);
+                    
+                    // 混合
+                    vec3 finalColor = baseColor.rgb;
+                    finalColor += vec3(specular) * uReflection; // 添加高光
+                    finalColor += height * 0.2; // 增加波纹立体感
+
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            const vertexShader = `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+
+            // 两个Plane，一个用于计算物理，一个用于渲染
+            const geometry = new THREE.PlaneGeometry(2, 2);
+
+            // 物理模拟材质
+            this.simMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    tPrev: { value: null },
+                    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                    uIsPinching: { value: 0 },
+                    uViscosity: { value: config.viscosity },
+                    uSpeed: { value: config.dynamicSpeed },
+                    uRippleStrength: { value: config.rippleEffectStrength },
+                    uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                },
+                vertexShader: vertexShader,
+                fragmentShader: simFragmentShader
+            });
+
+            // 最终渲染材质
+            this.renderMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    tDiffuse: { value: videoTexture },
+                    tFluid: { value: null },
+                    uRefraction: { value: config.refractionIndex },
+                    uDistortion: { value: config.distortionStrength },
+                    uReflection: { value: config.reflectionIntensity },
+                    uWaveHeight: { value: config.waveHeight }
+                },
+                vertexShader: vertexShader,
+                fragmentShader: renderFragmentShader
+            });
+
+            // 我们只添加一个Mesh到场景，通过渲染循环切换材质和Target
+            this.mesh = new THREE.Mesh(geometry, this.renderMaterial);
+            scene.add(this.mesh);
+
+            // 渲染循环
+            animate();
+        }
+
+        // --- 渲染循环 (Ping-Pong 缓冲技术) ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. 物理模拟步骤
+            this.mesh.material = this.simMaterial;
+            this.simMaterial.uniforms.tPrev.value = renderTargetA.texture;
+            this.simMaterial.uniforms.uMouse.value.set(state.handX, 1.0 - state.handY); // Y轴反转
+            this.simMaterial.uniforms.uIsPinching.value = state.isPinching ? 1.0 : 0.0;
+            this.simMaterial.uniforms.uViscosity.value = config.viscosity;
+            this.simMaterial.uniforms.uRippleStrength.value = config.rippleEffectStrength;
+
+            renderer.setRenderTarget(renderTargetB);
+            renderer.render(scene, camera);
+
+            // 交换 buffer
+            const temp = renderTargetA;
+            renderTargetA = renderTargetB;
+            renderTargetB = temp;
+
+            // 2. 最终渲染步骤
+            this.mesh.material = this.renderMaterial;
+            this.renderMaterial.uniforms.tFluid.value = renderTargetA.texture;
+            this.renderMaterial.uniforms.uRefraction.value = config.refractionIndex;
+            this.renderMaterial.uniforms.uDistortion.value = config.distortionStrength;
+            this.renderMaterial.uniforms.uReflection.value = config.reflectionIntensity;
+            this.renderMaterial.uniforms.uWaveHeight.value = config.waveHeight;
+
+            renderer.setRenderTarget(null); // 输出到屏幕
+            renderer.render(scene, camera);
+
+            updateAudio();
+            updateHUD();
+        }
+
+        // --- 2. MediaPipe Hands 设置 ---
+        function initMediaPipe() {
+            hands = new Hands({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }});
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            hands.onResults(onResults);
+
+            const cam = new Camera(videoElement, {
+                onFrame: async () => {
+                    await hands.send({image: videoElement});
+                },
+                width: 1280,
+                height: 720
+            });
+            cam.start();
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // 获取拇指(4)和食指(8)的坐标
+                const thumb = landmarks[4];
+                const index = landmarks[8];
+
+                // 计算捏合距离
+                const distance = Math.sqrt(
+                    Math.pow(thumb.x - index.x, 2) + 
+                    Math.pow(thumb.y - index.y, 2)
+                );
+
+                // 更新状态
+                state.isPinching = distance < config.pinchThreshold;
+                
+                // 计算中心点作为交互点
+                state.handX = (thumb.x + index.x) / 2;
+                state.handY = (thumb.y + index.y) / 2;
+
+                // 深度估算：手掌看起来越大(z越小)，或者直接用z坐标（mediapipe z是相对wrist的）
+                // 这里我们简单用拇指和食指中点的相对大小或者直接用landmarks的z
+                // 为了效果明显，我们假设手在画面越靠下或者越大越"近"
+                // 这里使用 landmarks[0].z (手腕z) 来近似，注意MP的z是相对值
+                state.handZ = Math.abs(landmarks[0].z * 10); // 放大系数
+            } else {
+                state.isPinching = false;
+            }
+        }
+
+        // --- 3. 音频处理 (合成器) ---
+        function initAudio() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            // 创建一个氛围音效 (Drone/Pad sound)
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(110, audioCtx.currentTime); // A2 Note
+            
+            // 初始静音
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            isAudioStarted = true;
+        }
+
+        function updateAudio() {
+            if (!isAudioStarted) return;
+            
+            // 逻辑：手指越向前（Z轴越近），音量越大
+            // MediaPipe z 越小越近，甚至为负。
+            // 简单映射：基于手的大小或存在的信心。
+            // 让我们用一个更直观的逻辑：如果捏合，声音改变，靠近屏幕声音变大
+            
+            let targetVolume = 0;
+            if (state.isPinching) {
+                // 如果捏合，产生声音
+                // 模拟深度：通常手越大占屏幕比例越大。
+                // 简单起见，我们假设手势存在时，基础音量0.2，Z轴调节增益
+                // 这里的 state.handZ 来源于 MP，通常在 0-0.5 之间
+                targetVolume = Math.min(1.0, 0.2 + (state.handZ * 2.0));
+                
+                // 稍微改变频率产生互动的声音反馈
+                oscillator.frequency.setTargetAtTime(110 + (state.handY * 100), audioCtx.currentTime, 0.1);
+            } else {
+                targetVolume = 0;
+            }
+
+            // 平滑音量过渡
+            gainNode.gain.setTargetAtTime(targetVolume, audioCtx.currentTime, 0.1);
+            state.volume = targetVolume;
+        }
+
+        // --- 4. UI 与 HUD ---
+        function initGUI() {
+            const gui = new dat.GUI();
+            const f1 = gui.addFolder('视觉参数');
+            f1.add(config, 'reflectionIntensity', 0, 1).name('反射强度');
+            f1.add(config, 'refractionIndex', 0, 2).name('折射指数');
+            f1.add(config, 'distortionStrength', 0, 1).name('扭曲强度');
+            f1.add(config, 'waveHeight', 0, 2).name('波浪高度');
+            f1.open();
+
+            const f2 = gui.addFolder('流体物理');
+            f2.add(config, 'viscosity', 0.8, 0.999).name('岩浆粘度/拖尾');
+            f2.add(config, 'rippleEffectStrength', 0.1, 2.0).name('涟漪强度');
+            f2.add(config, 'pinchThreshold', 0.01, 0.2).name('捏合灵敏度');
+            f2.open();
+        }
+
+        function updateHUD() {
+            const hud = document.getElementById('hud');
+            const status = state.isPinching ? "<span style='color:#0f0'>捏合中 (Pinching)</span>" : "等待捏合...";
+            const vol = Math.round(state.volume * 100);
+            
+            hud.innerHTML = `
+                状态: ${status}<br>
+                位置: X:${state.handX.toFixed(2)} Y:${state.handY.toFixed(2)}<br>
+                音量(深度): ${vol}%<br>
+                物理粘度: ${config.viscosity}
+            `;
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderTargetA.setSize(window.innerWidth, window.innerHeight);
+            renderTargetB.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 启动
+        init();
+
+    </script>
+</body>
+</html>
