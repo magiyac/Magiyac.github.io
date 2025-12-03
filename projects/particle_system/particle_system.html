@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Magiyac | 粒子幻境 (Hand Gesture Particles)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.17.0/dist/lil-gui.umd.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        /* 强制黑色背景，防止白屏 */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #050505; 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            user-select: none;
+        }
+        
+        #canvas-container { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 1; 
+        }
+        
+        /* 隐藏原始摄像头视频流 */
+        #input-video { 
+            display: none; 
+        }
+        
+        /* UI 层样式 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* 让点击穿透到 Canvas */
+            z-index: 10;
+        }
+
+        .interactive-btn {
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .interactive-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); /* 黑金风格的高光 */
+        }
+
+        /* 加载/启动 遮罩层 */
+        #loading-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: #D4AF37; /* 金色文字 */
+            transition: opacity 0.5s;
+        }
+
+        /* Lil GUI 自定义样式 (黑金风格) */
+        .lil-gui { 
+            --background-color: rgba(20, 20, 20, 0.8);
+            --text-color: #D4AF37;
+            --title-background-color: #333;
+            --widget-color: #444;
+            --hover-color: #555;
+            --focus-color: #D4AF37;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <video id="input-video" playsinline webkit-playsinline></video>
+
+    <div id="canvas-container"></div>
+
+    <div id="loading-overlay">
+        
