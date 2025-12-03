@@ -5,60 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magiyac | Portfolio</title>
     <style>
-        /* --- 全局样式 --- */
+        /* --- 0. 全局样式与粒子背景 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #050505;
-            color: #D4AF37;
+            background-color: #050505; /* 深邃黑 */
+            color: #D4AF37; /* 经典黑金的金色 */
             font-family: 'Helvetica Neue', Arial, sans-serif;
             overflow-x: hidden;
             transition: all 0.3s ease;
         }
-
-        /* 粒子画布背景 */
         #particle-canvas {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
         }
 
-        /* --- 语言切换按钮 (右上角) --- */
+        /* --- 1. 语言切换控制 (核心逻辑) --- */
+        .fr, .en { display: none; }
+        .zh, .fr, .en { line-height: 1.6; }
+        
+        body.lang-fr .zh, body.lang-fr .en { display: none; }
+        body.lang-fr .fr { display: block; } 
+        body.lang-fr span.fr { display: inline; } 
+        
+        body.lang-en .zh, body.lang-en .fr { display: none; }
+        body.lang-en .en { display: block; }
+        body.lang-en span.en { display: inline; } 
+
         .lang-switch {
-            position: fixed;
-            top: 20px;
-            right: 30px;
-            z-index: 100;
-            cursor: pointer;
-            border: 1px solid #D4AF37;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
+            position: fixed; top: 20px; right: 30px; z-index: 100; cursor: pointer;
+            border: 1px solid #D4AF37; padding: 5px 15px; border-radius: 20px;
+            font-size: 0.9rem; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
             transition: all 0.3s;
         }
-        .lang-switch:hover {
-            background: #D4AF37;
-            color: #000;
-        }
+        .lang-switch:hover { background: #D4AF37; color: #000; }
 
-        /* --- 三语控制逻辑 (核心升级) --- */
-        /* 1. 默认隐藏法文和英文 (默认显示中文) */
-        .fr, .en { display: none; }
-        .zh, .fr, .en { line-height: 1.6; } /* 确保行高一致 */
-        
-        /* 2. 当 body 具有 lang-fr 类时，显示法文，隐藏其他 */
-        body.lang-fr .zh, body.lang-fr .en { display: none; }
-        body.lang-fr .fr { display: inline; } 
-        body.lang-fr div.fr, body.lang-fr p.fr, body.lang-fr span.fr { display: block; } /* 确保块级元素正常显示 */
-        
-        /* 3. 当 body 具有 lang-en 类时，显示英文，隐藏其他 */
-        body.lang-en .zh, body.lang-en .fr { display: none; }
-        body.lang-en .en { display: inline; }
-        body.lang-en div.en, body.lang-en p.en, body.lang-en span.en { display: block; } /* 确保块级元素正常显示 */
-
-
-        /* --- 头部 Hero 区域及其他样式 (不变) --- */
+        /* --- 2. 头部 Hero 区域 --- */
         .hero {
             height: 100vh; display: flex; flex-direction: column; justify-content: center;
             align-items: center; text-align: center; position: relative; padding: 0 20px;
@@ -71,10 +51,8 @@
         .hero p {
             font-size: 1.2rem; color: #ccc; font-weight: 300; max-width: 600px; line-height: 1.6;
         }
-        .scroll-down {
-            position: absolute; bottom: 30px; color: #D4AF37;
-            animation: bounce 2s infinite; font-size: 2rem; cursor: pointer;
-        }
+
+        /* --- 3. 作品集网格布局 (修复后的关键区域) --- */
         .portfolio-section {
             padding: 4rem 2rem; max-width: 1200px; margin: 0 auto;
         }
@@ -83,7 +61,9 @@
             border-bottom: 1px solid rgba(212, 175, 55, 0.3); display: inline-block; padding-bottom: 10px;
         }
         .grid-container {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 响应式网格 */
+            gap: 2rem; /* 网格间距 */
         }
         .card {
             background: rgba(20, 20, 20, 0.8); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px;
@@ -99,11 +79,9 @@
             color: #D4AF37; text-decoration: none; font-size: 0.8rem; transition: 0.3s;
         }
         .card-btn:hover { background: #D4AF37; color: #000; }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-10px);}
-            60% {transform: translateY(-5px);}
-        }
+        /* 滚动动画 */
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+        .scroll-down { position: absolute; bottom: 30px; color: #D4AF37; animation: bounce 2s infinite; font-size: 2rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -135,7 +113,7 @@
 
         <div class="grid-container">
             
-            <div class="grid-container">
+            <div class="card">
                 <h3>
                     <span class="zh">星空特效</span>
                     <span class="fr">Effet Ciel Étoilé</span>
@@ -144,29 +122,30 @@
                 <p class="zh">这是我目前的首页背景，使用 HTML5 Canvas 和原生 JS 实现的粒子连线动画，模拟宇宙星空的视觉效果。</p>
                 <p class="fr">L'arrière-plan actuel de ma page d'accueil, réalisé avec HTML5 Canvas et JS natif, simulant un effet visuel cosmique.</p>
                 <p class="en">The current homepage background, implemented using HTML5 Canvas and native JS to simulate a cosmic starry visual effect.</p>
-                
                 <a href="#" class="card-btn">
                     <span class="zh">查看演示</span>
                     <span class="fr">Voir la démo</span>
                     <span class="en">View Demo</span>
                 </a>
+            </div>
 
-<div class="grid-container">
-    <h3>
-        <span class="zh">液态玻璃交互模拟器</span>
-        <span class="fr">Simulateur de Verre Liquide</span>
-        <span class="en">Magma Fluid Simulator</span>
-    </h3>
-    <p class="zh">利用 WebGL (Three.js) 和 MediaPipe 实现的手势交互流体模拟。需要摄像头权限。</p>
-    <p class="fr">Simulation de fluide interactive par gestes, utilisant WebGL (Three.js) et MediaPipe. Nécessite l'accès à la caméra.</p>
-    <p class="en">Gesture-controlled fluid simulation using WebGL (Three.js) and MediaPipe. Camera permission required.</p>
-    
-    <a href="projects/fluid/fluid.html" class="card-btn">
-    <span class="zh">立即体验</span>
-    </a>
-</div>
+            <div class="card">
+                <h3>
+                    <span class="zh">液态玻璃交互模拟器</span>
+                    <span class="fr">Simulateur de Verre Liquide</span>
+                    <span class="en">Magma Fluid Simulator</span>
+                </h3>
+                <p class="zh">利用 WebGL (Three.js) 和 MediaPipe 实现的手势交互流体模拟。需要摄像头权限。</p>
+                <p class="fr">Simulation de fluide interactive par gestes, utilisant WebGL (Three.js) et MediaPipe. Nécessite l'accès à la caméra.</p>
+                <p class="en">Gesture-controlled fluid simulation using WebGL (Three.js) and MediaPipe. Camera permission required.</p>
+                <a href="projects/fluid/fluid.html" class="card-btn">
+                    <span class="zh">立即体验</span>
+                    <span class="fr">Lancer la Démo</span>
+                    <span class="en">Launch Demo</span>
+                </a>
+            </div>
 
-<div class="grid-container">
+            <div class="card">
                 <h3>
                     <span class="zh">待添加项目</span>
                     <span class="fr">Projet à Venir</span>
@@ -175,52 +154,18 @@
                 <p class="zh">这里可以放你的下一个 Python 脚本、网页布局练习或者小游戏。只需要在 VS Code 里修改这段文字即可。</p>
                 <p class="fr">Espace réservé pour votre prochain script Python, exercice de mise en page web ou mini-jeu.</p>
                 <p class="en">Placeholder for your next Python script, web layout exercise, or mini-game. Edit this text in VS Code.</p>
-                
                 <a href="#" class="card-btn">
                     <span class="zh">等待上传</span>
                     <span class="fr">En attente</span>
                     <span class="en">Pending Upload</span>
                 </a>
             </div>
-            <div class="grid-container">
-                <h3>
-                    <span class="zh">待添加项目</span>
-                    <span class="fr">Projet à Venir</span>
-                    <span class="en">Upcoming Project</span>
-                </h3>
-                <p class="zh">这里可以放你的下一个 Python 脚本、网页布局练习或者小游戏。只需要在 VS Code 里修改这段文字即可。</p>
-                <p class="fr">Espace réservé pour votre prochain script Python, exercice de mise en page web ou mini-jeu.</p>
-                <p class="en">Placeholder for your next Python script, web layout exercise, or mini-game. Edit this text in VS Code.</p>
-                
-                <a href="#" class="card-btn">
-                    <span class="zh">等待上传</span>
-                    <span class="fr">En attente</span>
-                    <span class="en">Pending Upload</span>
-                </a>
-            </div>
-            <div class="grid-container">
-                <h3>
-                    <span class="zh">待添加项目</span>
-                    <span class="fr">Projet à Venir</span>
-                    <span class="en">Upcoming Project</span>
-                </h3>
-                <p class="zh">这里可以放你的下一个 Python 脚本、网页布局练习或者小游戏。只需要在 VS Code 里修改这段文字即可。</p>
-                <p class="fr">Espace réservé pour votre prochain script Python, exercice de mise en page web ou mini-jeu.</p>
-                <p class="en">Placeholder for your next Python script, web layout exercise, or mini-game. Edit this text in VS Code.</p>
-                
-                <a href="#" class="card-btn">
-                    <span class="zh">等待上传</span>
-                    <span class="fr">En attente</span>
-                    <span class="en">Pending Upload</span>
-                </a>
-           </div> 
-         </section> ```
-            <div class="grid-container">
+            
+            <div class="card">
                 <h3>GitHub</h3>
                 <p class="zh">点击这里可以直接跳转到我的 GitHub 主页，查看我所有的开源代码和提交记录。</p>
                 <p class="fr">Cliquez ici pour visiter mon profil GitHub et voir tous mes codes open source.</p>
                 <p class="en">Click here to visit my GitHub profile and view all my open-source code and commit history.</p>
-                
                 <a href="https://github.com/Magiyac" target="_blank" class="card-btn">
                     <span class="zh">访问主页</span>
                     <span class="fr">Visiter</span>
@@ -228,16 +173,30 @@
                 </a>
             </div>
 
-        </div>
-    </section>
+            <div class="card">
+                <h3>
+                    <span class="zh">CSS 动画演示</span>
+                    <span class="fr">Démo d'Animation CSS</span>
+                    <span class="en">CSS Animation Demo</span>
+                </h3>
+                <p class="zh">展示使用 CSS 关键帧（Keyframes）和过渡（Transitions）实现的复杂动画效果。这是对前端动效能力的体现。</p>
+                <p class="fr">Vitrine d'animations complexes réalisées avec des Keyframes et des Transitions CSS. Une démonstration de capacités front-end.</p>
+                <p class="en">Showcase of complex animations implemented using CSS Keyframes and Transitions. A demonstration of front-end dynamics.</p>
+                <a href="projects/project2.html" class="card-btn">
+                    <span class="zh">查看演示</span>
+                    <span class="fr">Voir la démo</span>
+                    <span class="en">View Demo</span>
+                </a>
+            </div>
+
+        </div> </section>
 
     <script>
-        // --- 1. 三语切换逻辑 ---
+        // 1. 语言切换逻辑
         const languages = ['zh', 'fr', 'en'];
 
         function setLanguage(lang) {
             const body = document.body;
-            // 移除所有语言类
             body.classList.remove('lang-fr', 'lang-en');
 
             if (lang === 'fr') {
@@ -245,15 +204,13 @@
             } else if (lang === 'en') {
                 body.classList.add('lang-en');
             }
-            
-            // 保存用户偏好
             localStorage.setItem('language', lang);
         }
 
         function toggleLanguage() {
             const currentLang = localStorage.getItem('language') || 'zh';
             const currentIndex = languages.indexOf(currentLang);
-            const nextIndex = (currentIndex + 1) % languages.length; // 循环切换
+            const nextIndex = (currentIndex + 1) % languages.length;
             const nextLang = languages[nextIndex];
             
             setLanguage(nextLang);
@@ -263,10 +220,11 @@
         window.onload = function() {
             const savedLang = localStorage.getItem('language') || 'zh';
             setLanguage(savedLang);
+            init(); // 确保粒子动画在页面加载时启动
         }
 
 
-        // --- 2. 粒子背景逻辑 (保持不变) ---
+        // 2. 粒子背景逻辑
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -297,6 +255,7 @@
         function init() {
             resize();
             for (let i = 0; i < 100; i++) particles.push(new Particle());
+            animate();
         }
 
         function connect() {
@@ -325,8 +284,8 @@
         }
 
         window.addEventListener('resize', () => { resize(); particles = []; init(); });
-        init();
-        animate();
+        
     </script>
 </body>
 </html>
+
